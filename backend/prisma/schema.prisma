@@ -1,0 +1,72 @@
+// WalletNG Database Schema
+// ORM: Prisma | Provider: SQLite (local file dev.db)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  phone        String        @unique
+  pinHash      String
+  name         String
+  accountNo    String        @unique
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  transactions Transaction[]
+  refreshTokens RefreshToken[]
+  loanApplications LoanApplication[]
+
+  @@map("users")
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // "credit" | "debit"
+  party     String
+  amount    Float
+  note      String   @default("")
+  status    String   @default("confirmed") // "confirmed" | "pending" | "failed"
+  channel   String   @default("online")   // "online" | "bluetooth" | "qr" | "nfc"
+  date      String   // ISO date string YYYY-MM-DD
+  time      String   // HH:MM
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model LoanApplication {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Float
+  score       Int
+  tier        String
+  status      String   @default("pending") // "pending" | "approved" | "rejected"
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("loan_applications")
+}
